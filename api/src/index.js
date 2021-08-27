@@ -7,6 +7,25 @@ app.use(cors());
 app.use(express.json());
 
 
+app.get('/chat/:sala', async (req, resp) => {
+    try {
+       
+        let sala = await db.tb_sala.findOne({ where: { nm_sala: req.params.sala } });
+       
+        let mensagens = await db.tb_chat.findAll(
+            { where: { id_sala: sala.id_sala },
+            order: [['id_chat', 'desc']],
+            include: ['tb_usuario', 'tb_sala'],
+        });
+        
+        resp.send(mensagens);
+    } catch (e) {
+        resp.send('Deu erro');
+        console.log(e.toString());
+    }
+});
+
+
 
 app.post('/chat', async (req, resp) => {
     try {
@@ -26,30 +45,45 @@ app.post('/chat', async (req, resp) => {
         resp.send(r);
         
     } catch (e) {
-        resp.send('Deu erro');
+        resp.send({ erro: 'Deu erro' });
         console.log(e.toString());
     }
 });
 
 
-app.get('/chat/:salaId', async (req, resp) => {
-    try {
-        let mensagens = await
-            db.tb_chat.findAll({
-                where: {
-                    id_sala: req.params.salaId
-                },
-                order: [['id_chat', 'desc']],
-                include: ['tb_usuario', 'tb_sala'],
-            });
-    
-        resp.send(mensagens);
-    } catch (e) {
-        resp.send(e.toString())
-    }
+app.get('/usuario', async (req, resp) => {
+
+    let usuarios = await db.tb_usuario.findAll();
+    resp.send(usuarios)
 })
 
+app.post('/usuario', async (req, resp) => {
+    let usuario = req.body;
 
+    let usuarioInserir = {
+        nm_usuario: usuario.nome
+    }
+
+    let r = await db.tb_usuario.create(usuarioInserir);
+    resp.send(r);
+})
+
+app.delete('/usuario', async (req, resp) => {
+    let id = req.query.id;
+
+    let r = await db.tb_usuario.destroy({ where: {id_usuario: id} })
+
+    resp.sendStatus(200);
+})
+
+app.put('/usuario', async (req, resp) => {
+    let id = req.query.id;
+    let nome = req.body.nome;
+
+    let r = await db.tb_usuario.update({ nm_usuario: nome }, {where : {id_usuario: id} })
+
+    resp.sendStatus(200);
+})
 
 app.listen(process.env.PORT,
            x => console.log(`>> Server up at port ${process.env.PORT}`))
